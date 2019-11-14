@@ -120,7 +120,7 @@ glimpse(titanic %>% select(Survived, Pclass, Sex, Age, SibSp, Fare))
 If we were to model `Survived` given the other variables, which variable is used as the splitting rules?  
   a. All categorical variables  
   b. All variables other than `Survived`  
-  c. Variables that results in smallest entropy after split
+  c. Variables that results in smallest entropy after split  
   d. Variables that results in smallest information gain after split
   
 
