@@ -1,0 +1,194 @@
+---
+title: "Tree-based Machine Learning Model"
+author: "Tiara Dwiputri"
+date: "`r format(Sys.Date(), '%B %e, %Y')`"
+output: 
+  revealjs::revealjs_presentation:
+    theme: black
+    css: assets/style.css
+---
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(dplyr)
+library(tidyr)
+library(formattable)
+library(ggplot2)
+```
+
+
+# A Model to Kickstart your Modelling Practices
+
+## Why Should You Learn This
+
+As machine learning is more commonly adopted in the industry, you will be soon exposed to a **tree-based model**. The algorithm for creating a tree-based model generates a set of rules by learning from historical data. Let's start with a simple example.
+
+# Motivational Example: Where do you want to eat?
+
+## Given a sample dataset
+
+```{r, echo=FALSE}
+set.seed(100)
+budget <- rnorm(50, mean = 25000, sd = 10000)
+review_based <- as.factor(rbinom(n = 50, size = 1, prob = 0.2))
+adventurous <- as.factor(rbinom(n = 50, size = 1, prob = 0.5))
+has_recommendation <- as.factor(rbinom(n = 50, size = 1, prob = 0.3))
+choice = sample(c('restaurant', 'food court'), 50, replace = T)
+
+
+dat <- data.frame(budget = budget, review_based = review_based, adventurous = adventurous, has_recommendation = has_recommendation, choice = choice)
+dat %>% 
+  head() %>% 
+  formattable()
+```
+
+The data is provided under `data_input` folder within the git repository.
+
+## Building A Decision Tree
+
+```{r echo=FALSE, fig.height=5}
+library(partykit)
+model <- ctree(choice ~ ., dat, control = ctree_control(mincriterion=0.05, minsplit=5, minbucket=5))
+```
+
+```{r echo=FALSE, fig.height=4.8}
+plot(model)
+```
+
+
+## Interpreting The Rules
+
+```{r echo=FALSE, fig.height=6}
+model
+```
+
+# Automatic Feature Selection
+
+## Understanding Entropy
+
+$E = \sum_{i=1}^{n}-p_i \times log_2(p_i)$
+
+$n$ is number of existing class on target variable  
+$p_i$ is number of class proportion
+
+Entropy is a measurement of a class heterogenity. A set of target variable that has 50-50 class proportion the most heterogen, resulting in $E = 1$, any different proportion will results in entropy lesser than 1.
+
+## Picking 'Most Informative' Predictor
+
+Recall how our decision tree picked `adventurous` as the first rules. The general algorithm of tree-based model can be described as follow:  
+1. Prepare all rule possibility on the current node  
+2. Calculate the entropy for current node  
+3. Split the data based on all possible rule from step 1  
+4. Calculate entropy for all split results    
+5. Calculate entropy difference from initial node to split result (commonly known as **information gain**)  
+6. Pick the rule that results in a largest information gain  
+
+## Glimpsing Our Data  
+
+```{r echo=FALSE, fig.height=6}
+dat %>% 
+  select(-budget) %>% 
+  gather(key = 'variable', value = 'value', -choice) %>% 
+  group_by(choice, variable, value) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x=value, y=count, fill=choice)) +
+  geom_col(position = 'fill') +
+  facet_wrap(~variable) +
+  theme_dark() +
+  theme(
+    plot.background = element_blank()
+  )
+```
+
+## What we have covered so far
+
+- Rule based model  
+- Entropy and information gain  
+- Automatic Feature selection  
+
+# Knowledge Check
+  
+###### Question 1
+
+1. Given the following dataset:
+
+```{r echo=FALSE}
+titanic <- read.csv('data_input/titanic.csv') 
+glimpse(titanic %>% select(Survived, Pclass, Sex, Age, SibSp, Fare))
+```
+
+If we were to model `Survived` given the other variables, which variable is used as the splitting rules?  
+  a. All categorical variables  
+  b. All variables other than `Survived`  
+  c. Variables that results in smallest entropy after split
+  d. Variables that results in smallest information gain after split
+  
+
+###### Question 2
+
+2. Take a look at the following contingency tables:
+
+```{r echo=FALSE}
+titanic %>% 
+  filter(Sex == 'female') %>% 
+  pull(Survived) %>% 
+  table() %>% 
+  prop.table()
+```
+
+```{r echo=FALSE}
+titanic %>% 
+  filter(Sex == 'male') %>% 
+  pull(Survived) %>% 
+  table() %>% 
+  prop.table()
+```
+
+```{r echo=FALSE}
+titanic %>% 
+  filter(Pclass == 3) %>% 
+  pull(Survived) %>% 
+  table() %>% 
+  prop.table()
+```
+
+```{r echo=FALSE}
+titanic %>% 
+  filter(Pclass == 1) %>% 
+  pull(Survived) %>% 
+  table() %>% 
+  prop.table()
+```
+
+Which of the dataset has the lowest entropy?  
+  a. First   
+  b. Second   
+  c. Third   
+  d. Fourth
+
+
+###### Question 3
+
+3. Take a look at the following plot:
+
+```{r, echo=FALSE, fig.height=2.8}
+titanic %>% 
+  select(Survived, Pclass, Sex, SibSp) %>% 
+  mutate_all(as.factor) %>% 
+  gather(key='variable', value='value', -Survived) %>% 
+  group_by(Survived, variable, value) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x=value, y=count, fill=Survived)) +
+  geom_col(position = 'fill') +
+  facet_wrap(~variable, scales = "free_x") +
+  theme_dark() +
+  theme(
+    plot.background = element_blank()
+  )
+```
+
+Based on the plot above, if we were to predict `Survived` variable, which of the shown predictors might be used as splitting rules?   
+  a. SibSp  
+  b. Pclass  
+  c. Sex  
+  d. Survived  
