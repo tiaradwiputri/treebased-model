@@ -2,6 +2,10 @@
   font-size: xx-large;
 }
 
+.reveal pre {
+	margin: 5px auto;
+}
+
 li {
   font-size: xx-large;
 }
